@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+
+
+@layer utilities {
+  .triangle-grip {
+    clip-path: polygon(0 0, 100% 100%, 0 100%);
+  }
+  .pointer-fine {
+    touch-action: none; /* Better mobile */
+  }
+}

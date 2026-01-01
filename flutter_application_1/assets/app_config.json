@@ -1,0 +1,264 @@
+{
+  "app": {
+    "id": "demo_app",
+    "name": "Universal Demo App",
+    "theme": {
+      "primaryColor": "#0062FF",
+      "backgroundColor": "#FFFFFF",
+      "fontFamily": "Roboto"
+    }
+  },
+
+  "screens": [
+    {
+      "id": "home",
+      "title": "Home",
+      "isInitial": true,
+      "root": {
+        "type": "Container",
+        "props": {
+          "padding": 16
+        },
+        "child": {
+          "type": "Column",
+          "props": {
+            "gap": 24
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "text": "Welcome Pavan 👋",
+                "fontSize": 28,
+                "fontWeight": "bold"
+              }
+            },
+
+            {
+              "type": "Image",
+              "props": {
+                "url": "https://picsum.photos/600/250",
+                "height": 250,
+                "fit": "cover",
+                "borderRadius": 16
+              }
+            },
+
+            {
+              "type": "Text",
+              "props": {
+                "text": "Popular Courses",
+                "fontSize": 22,
+                "fontWeight": "bold"
+              }
+            },
+
+            {
+              "type": "Card",
+              "props": {
+                "padding": 16,
+                "borderRadius": 16
+              },
+              "children": [
+                {
+                  "type": "Image",
+                  "props": {
+                    "url": "https://picsum.photos/600/300",
+                    "height": 180,
+                    "fit": "cover",
+                    "borderRadius": 12
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "text": "Complete Maths Mastery",
+                    "fontSize": 20,
+                    "fontWeight": "bold"
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "text": "20 Chapters • Beginner to Pro",
+                    "fontSize": 14
+                  }
+                },
+                {
+                  "type": "Button",
+                  "props": {
+                    "text": "View Course",
+                    "backgroundColor": "#0062FF",
+                    "textColor": "#FFFFFF",
+                    "action": {
+                      "type": "navigate",
+                      "target": "lesson"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "lesson",
+      "title": "Lesson",
+      "root": {
+        "type": "Container",
+        "props": {
+          "padding": 16
+        },
+        "child": {
+          "type": "Column",
+          "props": {
+            "gap": 20
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "text": "Introduction to Algebra",
+                "fontSize": 24,
+                "fontWeight": "bold"
+              }
+            },
+
+            {
+              "type": "Image",
+              "props": {
+                "url": "https://picsum.photos/600/300",
+                "height": 220,
+                "fit": "cover",
+                "borderRadius": 16
+              }
+            },
+
+            {
+              "type": "Text",
+              "props": {
+                "text": "Learn the basics of algebra with simple explanations and examples.",
+                "fontSize": 16
+              }
+            },
+
+            {
+              "type": "Button",
+              "props": {
+                "text": "Continue to Quiz",
+                "backgroundColor": "#0062FF",
+                "textColor": "#FFFFFF",
+                "action": {
+                  "type": "navigate",
+                  "target": "quiz"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "quiz",
+      "title": "Quiz",
+      "root": {
+        "type": "Container",
+        "props": {
+          "padding": 16
+        },
+        "child": {
+          "type": "Column",
+          "props": {
+            "gap": 16
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "text": "Quick Quiz",
+                "fontSize": 24,
+                "fontWeight": "bold"
+              }
+            },
+
+            {
+              "type": "Text",
+              "props": {
+                "text": "What is 2 + 2?",
+                "fontSize": 18
+              }
+            },
+
+            {
+              "type": "Button",
+              "props": {
+                "text": "4",
+                "action": {
+                  "type": "navigate",
+                  "target": "details"
+                }
+              }
+            },
+
+            {
+              "type": "Button",
+              "props": {
+                "text": "3",
+                "action": {
+                  "type": "alert",
+                  "title": "Incorrect",
+                  "message": "Try again 🙂"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "details",
+      "title": "Completed",
+      "root": {
+        "type": "Container",
+        "props": {
+          "padding": 24
+        },
+        "child": {
+          "type": "Column",
+          "props": {
+            "gap": 20,
+            "mainAxisAlignment": "center"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "text": "Lesson & Quiz Completed 🎉",
+                "fontSize": 22,
+                "fontWeight": "bold",
+                "textAlign": "center"
+              }
+            },
+
+            {
+              "type": "Button",
+              "props": {
+                "text": "Back to Home",
+                "backgroundColor": "#0062FF",
+                "textColor": "#FFFFFF",
+                "action": {
+                  "type": "navigate",
+                  "target": "home"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

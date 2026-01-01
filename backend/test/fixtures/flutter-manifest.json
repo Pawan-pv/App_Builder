@@ -1,0 +1,39 @@
+{
+  "version": "v1",
+  "app": {
+    "id": "demo-app",
+    "name": "Demo App",
+    "theme": {
+      "primaryColor": "#0062FF",
+      "backgroundColor": "#FFFFFF",
+      "fontFamily": "Roboto"
+    }
+  },
+  "screens": [
+    {
+      "id": "home",
+      "title": "Home",
+      "root": {
+        "type": "Column",
+        "children": [
+          {
+            "type": "Text",
+            "props": {
+              "text": "Welcome Pavan",
+              "fontSize": 20
+            }
+          },
+          {
+            "type": "ProductCard",
+            "props": {
+              "id": "p1",
+              "name": "Sample Product",
+              "price": 99,
+              "image": "https://picsum.photos/200"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

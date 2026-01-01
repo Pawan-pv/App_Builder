@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "ProductCard": { "type": "boolean" },
+    "VideoPlayer": { "type": "boolean" }
+  },
+  "additionalProperties": false
+}

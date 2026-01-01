@@ -1,0 +1,211 @@
+// prisma/schema.prisma
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["extendedIndexes"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ═══════════════════════════════════════════════════════
+// ENUMS
+// ═══════════════════════════════════════════════════════
+
+enum UserRole {
+  ADMIN
+  CREATOR
+  END_USER
+}
+
+enum AppStatus {
+  DRAFT
+  LIVE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+enum AccessStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+// ═══════════════════════════════════════════════════════
+// CORE MODELS
+// ═══════════════════════════════════════════════════════
+
+model User {
+  id        String    @id @default(uuid()) @db.Uuid
+  email     String    @unique
+  password  String
+  name      String?
+  role      UserRole  @default(END_USER)
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  appsOwned     App[]              @relation("CreatorApps")
+  analytics     AnalyticsEvent[]
+  payments      Payment[]
+  entitiesOwned Entity[]
+  accessList    Access[]
+  progressLogs  Progress[]
+
+  @@index([role])
+  @@index([email])
+}
+
+model App {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String
+  status      AppStatus @default(DRAFT)
+  themeJson   Json      @default("{}")
+  creatorId   String    @db.Uuid
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  // ✅ Universal Schema Storage
+  draftSchema Json? // Builder working draft
+  liveSchema  Json? // Published version (deprecated, use AppVersion)
+
+  creator   User             @relation("CreatorApps", fields: [creatorId], references: [id])
+  entities  Entity[]
+  versions  AppVersion[]
+  payments  Payment[]
+  analytics AnalyticsEvent[]
+  accessRecs Access[]
+  progress  Progress[]
+
+  @@index([creatorId])
+  @@index([status])
+}
+
+// ═══════════════════════════════════════════════════════
+// UNIVERSAL ENTITY SYSTEM
+// ═══════════════════════════════════════════════════════
+
+model Entity {
+  id             String   @id @default(uuid()) @db.Uuid
+  appId          String   @db.Uuid
+  collectionName String   // "products", "posts", "users", etc.
+  
+  // ✅ Flexible JSON data - stores ANY fields
+  data           Json
+  
+  orderIndex     Int      @default(0)
+  ownerId        String   @db.Uuid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  app    App        @relation(fields: [appId], references: [id], onDelete: Cascade)
+  owner  User       @relation(fields: [ownerId], references: [id])
+  access Access[]
+  progress Progress[]
+
+  // ✅ Performance indexes
+  @@index([appId, collectionName])
+  @@index([appId, deletedAt])
+  @@index([collectionName])
+  @@index([data], type: Gin)
+}
+
+// ═══════════════════════════════════════════════════════
+// ACCESS & PROGRESS (Universal)
+// ═══════════════════════════════════════════════════════
+
+model Access {
+  id        String       @id @default(uuid()) @db.Uuid
+  appId     String       @db.Uuid
+  userId    String       @db.Uuid
+  entityId  String       @db.Uuid
+  status    AccessStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+
+  app    App    @relation(fields: [appId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+  entity Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@unique([appId, userId, entityId])
+  @@index([userId, status])
+}
+
+model Progress {
+  id         String   @id @default(uuid()) @db.Uuid
+  appId      String   @db.Uuid
+  userId     String   @db.Uuid
+  entityId   String   @db.Uuid
+  progress   Float    @default(0) // 0 to 100
+  resumeTime Int      @default(0) // For video/audio (seconds)
+  completed  Boolean  @default(false)
+  metadata   Json?    // Store additional progress data
+  updatedAt  DateTime @updatedAt
+
+  app    App    @relation(fields: [appId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+  entity Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@unique([appId, userId, entityId])
+  @@index([userId, completed])
+}
+
+// ═══════════════════════════════════════════════════════
+// VERSIONING & PUBLISHING
+// ═══════════════════════════════════════════════════════
+
+model AppVersion {
+  id        String   @id @default(uuid()) @db.Uuid
+  appId     String   @db.Uuid
+  version   String
+  schema    Json     // Complete app manifest
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  app App @relation(fields: [appId], references: [id], onDelete: Cascade)
+
+  @@index([appId, published])
+  @@index([appId, createdAt])
+}
+
+// ═══════════════════════════════════════════════════════
+// PAYMENTS & ANALYTICS
+// ═══════════════════════════════════════════════════════
+
+model Payment {
+  id       String        @id @default(uuid()) @db.Uuid
+  appId    String        @db.Uuid
+  userId   String        @db.Uuid
+  entityId String?       @db.Uuid
+  amount   Int
+  status   PaymentStatus
+  paidAt   DateTime      @default(now())
+  metadata Json?
+
+  app  App  @relation(fields: [appId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+  @@index([appId, status])
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  appId     String   @db.Uuid
+  userId    String?  @db.Uuid
+  eventType String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  app  App   @relation(fields: [appId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([appId, eventType])
+  @@index([appId, createdAt])
+}
