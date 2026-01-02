@@ -68,10 +68,9 @@ export function ScreenTabs() {
               className={`group relative flex items-center gap-2 px-4 py-2 
                 text-[10px] font-black uppercase tracking-wider 
                 rounded-xl cursor-pointer transition-all whitespace-nowrap border
-                ${
-                  isActive
-                    ? "bg-teal-500 text-white border-teal-600 shadow-sm"
-                    : "bg-slate-50 text-slate-500 hover:bg-slate-100 border-slate-200"
+                ${isActive
+                  ? "bg-teal-500 text-white border-teal-600 shadow-sm"
+                  : "bg-slate-50 text-slate-500 hover:bg-slate-100 border-slate-200"
                 }`}
             >
               {screen.name}
@@ -82,10 +81,9 @@ export function ScreenTabs() {
                     handleDeleteScreen(e, screen.id)
                   }
                   className={`ml-1 p-0.5 rounded-md transition-colors
-                    ${
-                      isActive
-                        ? "text-white/70 hover:bg-white/20"
-                        : "text-slate-400 hover:bg-black/10"
+                    ${isActive
+                      ? "text-white/70 hover:bg-white/20"
+                      : "text-slate-400 hover:bg-black/10"
                     }`}
                   title="Delete Screen"
                 >

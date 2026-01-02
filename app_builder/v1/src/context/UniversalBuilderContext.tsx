@@ -44,6 +44,7 @@ interface UniversalBuilderContextType {
 
   deviceType: DeviceType;
   zoom: number;
+  offset: { x: number; y: number };
 
   collections: Collection[];
   screens: Screen[];
@@ -54,6 +55,7 @@ interface UniversalBuilderContextType {
 
   setDeviceType: (d: DeviceType) => void;
   setZoom: (z: number) => void;
+  setOffset: (o: { x: number; y: number }) => void;
   setActiveScreen: (id: string | null) => void;
   setSelectedWidget: (id: string | null) => void;
   setScreens: React.Dispatch<React.SetStateAction<Screen[]>>;
@@ -172,6 +174,7 @@ export function UniversalBuilderProvider({
 
   const [deviceType, setDeviceType] = useState<DeviceType>("iphone");
   const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
 
   const [collections, setCollections] = useState<Collection[]>([]);
   const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
@@ -179,9 +182,48 @@ export function UniversalBuilderProvider({
   const [screens, setScreens] = useState<Screen[]>([
     {
       id: "screen-1",
-      name: "Home",
+      name: "Login",
       position: { x: 100, y: 100 },
-      widgets: [],
+      widgets: [
+        {
+          id: "logo-text",
+          type: "Text",
+          label: "FlowStudio logo",
+          props: {
+            content: { text: "Welcome Back" },
+            style: { fontSize: 24, color: "#111827" },
+            layout: { padding: 20, widthMode: "fill" }
+          }
+        },
+        {
+          id: "email-input",
+          type: "Input",
+          label: "Email Input",
+          props: {
+            content: { placeholder: "email@example.com", fieldName: "email", type: "email" },
+            layout: { padding: 10, widthMode: "fill" }
+          }
+        },
+        {
+          id: "password-input",
+          type: "Input",
+          label: "Password Input",
+          props: {
+            content: { placeholder: "password", fieldName: "password", type: "password" },
+            layout: { padding: 10, widthMode: "fill" }
+          }
+        },
+        {
+          id: "login-btn",
+          type: "Button",
+          label: "Login Button",
+          props: {
+            content: { text: "Sign In" },
+            style: { backgroundColor: "#0f766e" },
+            layout: { padding: 20, widthMode: "fill" }
+          }
+        }
+      ],
       isInitial: true,
       isEnabled: true,
     },
@@ -404,6 +446,7 @@ export function UniversalBuilderProvider({
         appName,
         deviceType,
         zoom,
+        offset,
         collections,
         screens,
         activeScreenId,
@@ -411,6 +454,7 @@ export function UniversalBuilderProvider({
         selectedWidget,
         setDeviceType,
         setZoom,
+        setOffset,
         setActiveScreen: (id) => {
           setActiveScreenId(id);
           setSelectedWidgetId(null);

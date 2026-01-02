@@ -66,10 +66,10 @@ export interface FormField {
 export type DataBinding =
   | { type: "static"; value: any }
   | {
-      type: "dynamic";
-      expression: string;
-      scope?: "runtime" | "item" | "form";
-    };
+    type: "dynamic";
+    expression: string;
+    scope?: "runtime" | "item" | "form";
+  };
 
 /* ─────────────────────────────────────────────
    WIDGET SYSTEM
@@ -115,30 +115,49 @@ export interface WidgetProps {
     crossAxisAlignment?: string;
     selfAlignment?: string;
     padding?:
-      | number
-      | { top?: number; right?: number; bottom?: number; left?: number };
+    | number
+    | { top?: number; right?: number; bottom?: number; left?: number };
     gap?: number;
     width?: number | string;
     height?: number | string;
     widthMode?: SizeMode;
     heightMode?: SizeMode;
+    columns?: number;
   };
+
   style?: {
+    /* Existing */
     color?: string;
     backgroundColor?: string;
     fontSize?: number;
     borderRadius?: number;
     imageUrl?: string;
+    borderColor?: string;
+
+    /* ✅ New */
+    borderWidth?: number;
+    borderStyle?: "solid" | "dashed" | "dotted" | "none";
+    boxShadow?: string;
+    opacity?: number; // 0 → 1
+    fontWeight?: number | "normal" | "bold" | "lighter" | "bolder";
+    textAlign?: "left" | "center" | "right" | "justify";
+    fontStyle?: "normal" | "italic";
+    letterSpacing?: number; // px
   };
+
   content?: {
     text?: string | DataBinding;
     dataSource?: string;
     navigateTo?: string;
+    placeholder?: string;
+    fieldName?: string;
+    defaultValue?: string;
+    type?: string;
   };
+
   formField?: FormField;
   actions?: WidgetAction[];
   itemTemplate?: Widget;
-  columns?: number;
 }
 
 export interface Widget {

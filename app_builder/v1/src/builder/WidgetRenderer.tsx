@@ -45,15 +45,6 @@ export function WidgetRenderer({
   const isRoot = !parentId;
   const isFlex = type === "Column" || type === "Row";
 
-  const canResizeWidth = type !== "Text";
-  const canResizeHeight = [
-    "Image",
-    "Container",
-    "Column",
-    "Row",
-    "ListView",
-  ].includes(type);
-
   /* ─────────────────────────────────────────────
      CONDITIONAL VISIBILITY
   ───────────────────────────────────────────── */
@@ -89,11 +80,11 @@ export function WidgetRenderer({
   }, [runActions]);
 
   /* ─────────────────────────────────────────────
-     DRAG (ROOT ONLY)
+     DRAG
   ───────────────────────────────────────────── */
 
   const startDrag = (e: React.MouseEvent) => {
-    if (!isRoot || e.button !== 0 || !widgetRef.current) return;
+    if (e.button !== 0 || !widgetRef.current) return;
 
     e.stopPropagation();
     dragMovedRef.current = false;
@@ -135,10 +126,13 @@ export function WidgetRenderer({
   };
 
   /* ─────────────────────────────────────────────
-     RESIZE
+     RESIZE (4 CORNERS)
   ───────────────────────────────────────────── */
 
-  const startResize = (e: React.MouseEvent, dir: "right" | "bottom") => {
+  const startResize = (
+    e: React.MouseEvent,
+    dir: "nw" | "ne" | "sw" | "se"
+  ) => {
     e.preventDefault();
     e.stopPropagation();
     if (!widgetRef.current) return;
@@ -157,16 +151,40 @@ export function WidgetRenderer({
         ? props.layout.height
         : rect.height;
 
+    const baseX = props.layout?.x ?? 0;
+    const baseY = props.layout?.y ?? 0;
+
     const onMove = (ev: MouseEvent) => {
       const dx = (ev.clientX - startX) / zoom;
       const dy = (ev.clientY - startY) / zoom;
+
+      let width = baseW;
+      let height = baseH;
+      let x = baseX;
+      let y = baseY;
+
+      if (dir.includes("e")) width = Math.max(32, baseW + dx);
+      if (dir.includes("s")) height = Math.max(24, baseH + dy);
+
+      if (dir.includes("w")) {
+        width = Math.max(32, baseW - dx);
+        x = baseX + dx;
+      }
+
+      if (dir.includes("n")) {
+        height = Math.max(24, baseH - dy);
+        y = baseY + dy;
+      }
 
       updateWidgetProps(screenId, id, {
         props: {
           layout: {
             ...props.layout,
-            width: dir === "right" ? Math.max(32, baseW + dx) : baseW,
-            height: dir === "bottom" ? Math.max(24, baseH + dy) : baseH,
+            position: "absolute",
+            width,
+            height,
+            x,
+            y,
             widthMode: "fixed",
             heightMode: "fixed",
           },
@@ -187,7 +205,7 @@ export function WidgetRenderer({
      STYLES
   ───────────────────────────────────────────── */
 
-  const style: React.CSSProperties = {
+  const containerStyle: React.CSSProperties = {
     position: isRoot ? "absolute" : "relative",
     left: isRoot ? props.layout?.x ?? 0 : undefined,
     top: isRoot ? props.layout?.y ?? 0 : undefined,
@@ -208,8 +226,13 @@ export function WidgetRenderer({
     alignItems: mapCrossAlign(props.layout?.crossAxisAlignment),
     alignSelf: mapCrossAlign(props.layout?.selfAlignment),
 
-    color: resolveColor(props.style?.color),
     backgroundColor: resolveColor(props.style?.backgroundColor),
+    borderColor: resolveColor(props.style?.borderColor),
+    borderWidth: props.style?.borderWidth,
+    borderStyle: props.style?.borderStyle,
+    borderRadius: props.style?.borderRadius,
+    boxShadow: props.style?.boxShadow,
+    opacity: props.style?.opacity,
   };
 
   /* ─────────────────────────────────────────────
@@ -224,7 +247,7 @@ export function WidgetRenderer({
         isSelected && "ring-2 ring-teal-500",
         isDragging && "cursor-grabbing"
       )}
-      style={style}
+      style={containerStyle}
       onMouseDown={startDrag}
       onClick={(e) => {
         e.stopPropagation();
@@ -232,23 +255,28 @@ export function WidgetRenderer({
         setSelectedWidget(id);
         runActions("onTap");
       }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        setSelectedWidget(id);
+      }}
     >
       {renderContent(widget, screenId)}
 
       {isSelected && !isDragging && (
         <>
-          {canResizeWidth && (
+          {(["nw", "ne", "sw", "se"] as const).map((dir) => (
             <div
-              onMouseDown={(e) => startResize(e, "right")}
-              className="absolute -right-2 top-1/2 h-10 w-3 cursor-ew-resize bg-slate-700 rounded"
+              key={dir}
+              onMouseDown={(e) => startResize(e, dir)}
+              className={clsx(
+                "absolute w-3 h-3 bg-white border border-slate-700 rounded",
+                dir === "nw" && "-top-1.5 -left-1.5 cursor-nw-resize",
+                dir === "ne" && "-top-1.5 -right-1.5 cursor-ne-resize",
+                dir === "sw" && "-bottom-1.5 -left-1.5 cursor-sw-resize",
+                dir === "se" && "-bottom-1.5 -right-1.5 cursor-se-resize"
+              )}
             />
-          )}
-          {canResizeHeight && (
-            <div
-              onMouseDown={(e) => startResize(e, "bottom")}
-              className="absolute -bottom-2 left-1/2 w-10 h-3 cursor-ns-resize bg-slate-700 rounded"
-            />
-          )}
+          ))}
         </>
       )}
     </div>
@@ -284,10 +312,23 @@ function renderContent(widget: Widget, screenId: string) {
   if (type === "Input") {
     const fieldName = props.formField?.name;
 
+    const inputStyle: React.CSSProperties = {
+      color: resolveColor(props.style?.color),
+      fontSize: props.style?.fontSize,
+      fontWeight: props.style?.fontWeight,
+      fontStyle: props.style?.fontStyle,
+      letterSpacing: props.style?.letterSpacing,
+      textAlign: props.style?.textAlign,
+      borderColor: resolveColor(props.style?.borderColor),
+      borderWidth: props.style?.borderWidth,
+      borderStyle: props.style?.borderStyle,
+    };
+
     return (
-      <div className="space-y-1">
+      <div className="h-full w-full flex flex-col">
         <input
-          className="w-full border rounded p-2 text-sm"
+          className="flex-1 w-full rounded p-2 text-sm"
+          style={inputStyle}
           placeholder={widget.label}
           value={fieldName ? getRuntimeValue(fieldName) ?? "" : ""}
           onChange={(e) => {
@@ -295,9 +336,10 @@ function renderContent(widget: Widget, screenId: string) {
             setRuntimeValue(fieldName, e.target.value);
           }}
         />
-
         {fieldName && getFormError(fieldName) && (
-          <p className="text-xs text-red-500">{getFormError(fieldName)}</p>
+          <p className="text-xs text-red-500 mt-1">
+            {getFormError(fieldName)}
+          </p>
         )}
       </div>
     );
@@ -307,47 +349,17 @@ function renderContent(widget: Widget, screenId: string) {
 
   if (type === "Text") {
     const text = resolveBinding(props.content?.text);
-    return <p>{String(text ?? "")}</p>;
-  }
 
-  /* ---------- LIST VIEW (FIXED) ---------- */
+    const textStyle: React.CSSProperties = {
+      color: resolveColor(props.style?.color),
+      fontSize: props.style?.fontSize,
+      fontWeight: props.style?.fontWeight,
+      fontStyle: props.style?.fontStyle,
+      letterSpacing: props.style?.letterSpacing,
+      textAlign: props.style?.textAlign,
+    };
 
-  if (type === "ListView") {
-    const list = resolveBinding(props.content?.dataSource);
-
-    if (!Array.isArray(list)) {
-      return <div className="text-xs text-slate-400">Bind a list</div>;
-    }
-
-    if (!props.itemTemplate) {
-      return <div className="text-xs text-red-400">Missing item template</div>;
-    }
-
-    return (
-      <div className="flex flex-col gap-2">
-        {list.map((_, i) => {
-          const template = props.itemTemplate!;
-          const itemWidget: Widget = {
-            id: `${widget.id}-${i}`,
-            type: template.type,
-            label: template.label,
-            props: template.props,
-            children: template.children,
-            workflow: template.workflow,
-            meta: template.meta,
-          };
-
-          return (
-            <WidgetRenderer
-              key={itemWidget.id}
-              widget={itemWidget}
-              screenId={screenId}
-              parentId={widget.id}
-            />
-          );
-        })}
-      </div>
-    );
+    return <p style={textStyle}>{String(text ?? "")}</p>;
   }
 
   return <div>{type}</div>;

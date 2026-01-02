@@ -1,67 +1,226 @@
-// src/builder/Canvas.tsx
-import { motion } from 'framer-motion';
-import { useUniversalBuilder,  } from '../context/UniversalBuilderContext';
-import type { Screen } from '../types';
-import { PhoneScreen } from './PhoneScreen';
-import { ZoomControls } from './ZoomControls';
+import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { useUniversalBuilder } from "../context/UniversalBuilderContext";
+import type { Screen, Widget } from "../types";
+import { defaultSizeByType } from "../types";
+import { PhoneScreen } from "./PhoneScreen";
+import { ZoomControls } from "./ZoomControls";
+
+/* ─────────────────────────────────────────────
+   TYPES
+───────────────────────────────────────────── */
+
+type Connection = {
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+};
+
+/* ─────────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────────── */
+
+function collectNavigationConnections(screens: Screen[]): Connection[] {
+  const connections: Connection[] = [];
+
+  const screenMap = new Map(screens.map((s) => [s.id, s]));
+
+  function walkWidgets(
+    widgets: Widget[],
+    screen: Screen,
+    parentOffset = { x: 0, y: 0 }
+  ) {
+    for (const widget of widgets) {
+      const layout = widget.props.layout;
+      const size = defaultSizeByType[widget.type] || { w: 100, h: 40 };
+
+      const widgetX =
+        screen.position.x +
+        parentOffset.x +
+        (typeof layout?.x === "number" ? layout.x : 0) +
+        size.w / 2;
+
+      const widgetY =
+        screen.position.y +
+        parentOffset.y +
+        (typeof layout?.y === "number" ? layout.y : 0) +
+        size.h / 2;
+
+      // 🔗 Look for navigate actions
+      const navigateActions =
+        widget.props.actions?.filter(
+          (a) => a.type === "navigate" && a.config?.targetScreenId
+        ) ?? [];
+
+      for (const action of navigateActions) {
+        const target = screenMap.get(action.config.targetScreenId!);
+        if (!target) continue;
+
+        connections.push({
+          from: { x: widgetX, y: widgetY },
+          to: {
+            x: target.position.x + 180, // screen center approx
+            y: target.position.y + 320,
+          },
+        });
+      }
+
+      if (widget.children) {
+        walkWidgets(widget.children, screen, {
+          x: parentOffset.x + (typeof layout?.x === "number" ? layout.x : 0),
+          y: parentOffset.y + (typeof layout?.y === "number" ? layout.y : 0),
+        });
+      }
+    }
+  }
+
+  for (const screen of screens) {
+    walkWidgets(screen.widgets, screen);
+  }
+
+  return connections;
+}
+
+function bezierPath(from: Connection["from"], to: Connection["to"]) {
+  const dx = Math.abs(to.x - from.x) * 0.5;
+
+  return `
+    M ${from.x} ${from.y}
+    C ${from.x + dx} ${from.y},
+      ${to.x - dx} ${to.y},
+      ${to.x} ${to.y}
+  `;
+}
+
+/* ─────────────────────────────────────────────
+   COMPONENT
+───────────────────────────────────────────── */
 
 export function Canvas() {
-  const { screens, zoom, setActiveScreen } = useUniversalBuilder();
+  const { screens, zoom, setZoom, offset, setOffset, setActiveScreen } = useUniversalBuilder();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isPanning, setIsPanning] = useState(false);
+  const lastMousePos = useRef({ x: 0, y: 0 });
+
+  // 1. Zoom to Cursor Logic (Native for preventDefault)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheelNative = (e: WheelEvent) => {
+      e.preventDefault();
+
+      const delta = -e.deltaY;
+      const factor = delta > 0 ? 1.08 : 0.92;
+      const nextZoom = Math.min(Math.max(zoom * factor, 0.1), 4);
+
+      const rect = container.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+
+      const newOffsetX = mx - ((mx - offset.x) / zoom) * nextZoom;
+      const newOffsetY = my - ((my - offset.y) / zoom) * nextZoom;
+
+      setZoom(nextZoom);
+      setOffset({ x: newOffsetX, y: newOffsetY });
+    };
+
+    container.addEventListener("wheel", handleWheelNative, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheelNative);
+  }, [zoom, offset, setZoom, setOffset]);
+
+  // 2. Pan Logic
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 0 && (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'svg')) {
+      setIsPanning(true);
+      lastMousePos.current = { x: e.clientX, y: e.clientY };
+      setActiveScreen(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!isPanning) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - lastMousePos.current.x;
+      const dy = e.clientY - lastMousePos.current.y;
+      setOffset({ x: offset.x + dx, y: offset.y + dy });
+      lastMousePos.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const handleMouseUp = () => setIsPanning(false);
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isPanning, offset, setOffset]);
+
+  const connections = collectNavigationConnections(screens);
 
   return (
-    /* 1. Viewport: This covers the available space between sidebars */
-    <div 
-      className="w-full h-full relative bg-slate-50 overflow-hidden cursor-crosshair" 
-      onClick={(e) => {
-        if (e.target === e.currentTarget) setActiveScreen(null);
-      }}
+    <div
+      ref={containerRef}
+      onMouseDown={handleMouseDown}
+      className={`relative w-full h-full overflow-hidden bg-slate-100 select-none ${isPanning ? 'cursor-grabbing' : 'cursor-crosshair'}`}
     >
-      {/* 2. Grid Background: Stays fixed or moves with zoom? 
-          Usually better to keep fixed for performance */}
-      <div 
-        className="absolute inset-0 opacity-40 pointer-events-none" 
-        style={{ 
-          backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', 
-          backgroundSize: `${32 * zoom}px ${32 * zoom}px` // Optional: scale grid with zoom
-        }} 
-      />
-
-      {/* 3. Zoomable Layer: ONLY this div and its children will scale */}
-      <motion.div 
-        className="w-full h-full relative"
-        animate={{ scale: zoom }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        style={{ transformOrigin: 'center center' }} 
+      <motion.div
+        animate={{
+          scale: zoom,
+          x: offset.x,
+          y: offset.y
+        }}
+        transition={{ type: "spring", stiffness: 400, damping: 40 }}
+        style={{ transformOrigin: "0 0" }}
+        className="relative w-full h-full"
       >
-        <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible" style={{ zIndex: 5 }}>
-          {screens.map((s: Screen, i: number) => {
-            const next = screens[i + 1];
-            if (!next) return null;
-            const x1 = s.position.x + 240;
-            const y1 = s.position.y + 225;
-            const x2 = next.position.x;
-            const y2 = next.position.y + 225;
-            
-            return (
-              <path 
-                key={s.id}
-                d={`M ${x1} ${y1} C ${x1 + 80} ${y1}, ${x2 - 80} ${y2}, ${x2} ${y2}`}
-                stroke="#34d399" 
-                strokeWidth="2" 
-                fill="none" 
-                strokeDasharray="6 6"
-              />
-            );
-          })}
+        {/* ───────── SVG CONNECTION LAYER ───────── */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-visible">
+          <defs>
+            <marker
+              id="arrow"
+              markerWidth="10"
+              markerHeight="10"
+              refX="8"
+              refY="5"
+              orient="auto"
+              markerUnits="strokeWidth"
+            >
+              <path d="M0,0 L10,5 L0,10 z" fill="#14b8a6" />
+            </marker>
+          </defs>
+
+          {connections.map((c, i) => (
+            <path
+              key={i}
+              d={bezierPath(c.from, c.to)}
+              stroke="#14b8a6"
+              strokeWidth={3}
+              fill="none"
+              markerEnd="url(#arrow)"
+              className="opacity-60 drop-shadow-sm transition-all"
+              style={{
+                strokeDasharray: "10,5",
+                animation: "dash 30s linear infinite",
+              }}
+            />
+          ))}
         </svg>
 
-        {screens.map((screen: Screen) => (
+        {/* ───────── SCREENS ───────── */}
+        {screens.map((screen) => (
           <PhoneScreen key={screen.id} screen={screen} />
         ))}
       </motion.div>
 
-      {/* 4. Zoom Controls: Floating UI inside the canvas but NOT scaled */}
       <ZoomControls />
+
+      <style>{`
+        @keyframes dash {
+          to { stroke-dashoffset: -1000; }
+        }
+      `}</style>
     </div>
   );
 }

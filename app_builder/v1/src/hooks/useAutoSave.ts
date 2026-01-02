@@ -5,7 +5,7 @@ import { toFlutterSchema } from "../utils/schema-transformer";
 
 export function useAutoSave(appId: string | null) {
   const { screens } = useUniversalBuilder();
-  const timerRef = useRef< null>(null);
+  const timerRef = useRef<any>(null);
   const lastSavedRef = useRef<string>("");
   const isSavingRef = useRef(false);
 

@@ -29,7 +29,7 @@ export default function BuilderPage() {
 
   useKeyboardShortcuts();
 
-  const activeScreen = screens.find((s) => s.id === activeScreenId);
+
 
   return (
     <div className="flex h-screen w-full bg-white overflow-hidden font-sans text-slate-900">

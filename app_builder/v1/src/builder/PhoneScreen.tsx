@@ -8,18 +8,18 @@ import { GripHorizontal } from 'lucide-react';
 export function PhoneScreen({ screen }: { screen: Screen }) {
   const { activeScreenId, setActiveScreen, updateScreenPosition, zoom } = useUniversalBuilder();
   const isActive = activeScreenId === screen.id;
-  
+
   // Track last mouse position to calculate "Step Delta"
   const lastMousePos = useRef({ x: 0, y: 0 });
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return; // Only left click
-    
+
     e.preventDefault();
     e.stopPropagation(); // Stop canvas panning
-    
+
     setActiveScreen(screen.id);
-    
+
     // Initialize the "Last Position"
     lastMousePos.current = { x: e.clientX, y: e.clientY };
     document.body.style.cursor = 'grabbing';
@@ -67,34 +67,34 @@ export function PhoneScreen({ screen }: { screen: Screen }) {
       className="flex flex-col gap-3 group"
     >
       {/* 🟢 THE DRAG HANDLE */}
-      <div 
+      <div
         onMouseDown={handleMouseDown}
         className={`
           flex items-center justify-between px-4 py-2 h-10
           cursor-grab active:cursor-grabbing rounded-xl border-2 select-none
-          ${isActive 
-            ? "bg-teal-500 border-teal-400 text-white shadow-xl" 
+          ${isActive
+            ? "bg-teal-500 border-teal-400 text-white shadow-xl"
             : "bg-white border-slate-200 text-slate-400 hover:border-slate-300 shadow-sm"
           }
         `}
       >
         <div className="flex items-center gap-2">
-           <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white animate-pulse' : 'bg-slate-300'}`} />
-           <span className="text-[10px] font-black uppercase tracking-widest leading-none">
-             {screen.name}
-           </span>
+          <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white animate-pulse' : 'bg-slate-300'}`} />
+          <span className="text-[10px] font-black uppercase tracking-widest leading-none">
+            {screen.name}
+          </span>
         </div>
         <GripHorizontal size={16} />
       </div>
 
       {/* 📱 DEVICE FRAME */}
       <div className={`
-        relative bg-slate-900 rounded-[3rem] p-3 shadow-2xl transition-all
+        relative bg-slate-900 rounded-[1.5rem] p-2 shadow-2xl transition-all
         ${isActive ? "ring-8 ring-teal-500/10 scale-[1.01]" : "opacity-95"}
       `}>
-         <div className="rounded-[2.2rem] overflow-hidden bg-white border-[6px] border-slate-800">
-            <ScreenContentEditor screenId={screen.id} />
-         </div>
+        <div className="rounded-[2rem] overflow-hidden bg-white border-[2px] border-slate-800">
+          <ScreenContentEditor screenId={screen.id} />
+        </div>
       </div>
     </div>
   );
