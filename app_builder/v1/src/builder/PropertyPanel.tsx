@@ -11,6 +11,8 @@ import {
   Plus,
   GitBranch,
 } from "lucide-react";
+import { isWorkflowValid } from "../workflow/isWorkflowValid";
+
 
 import { AlignToolbar } from "./AlignToolbar";
 import { WorkflowEditor } from "../workflow/WorkflowEditor";
@@ -100,7 +102,10 @@ export function PropertyPanel() {
   return (
     <>
       {/* ───────── PROPERTY PANEL ───────── */}
-      <aside className="w-72 border-l bg-white flex flex-col h-full overflow-hidden">
+      <aside
+        data-testid="property-panel"
+        className="w-72 border-l bg-white flex flex-col h-full overflow-hidden"
+      >
         {/* Header */}
         <div className="p-4 border-b flex justify-between shrink-0">
           <div>
@@ -127,6 +132,7 @@ export function PropertyPanel() {
             <button
               key={t}
               onClick={() => setActiveTab(t)}
+              aria-label={`${t} tab`}
               className={`flex-1 py-3 flex justify-center border-b-2 transition-all ${activeTab === t
                 ? "border-teal-500 text-teal-600 bg-teal-50/30"
                 : "border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50"
@@ -149,7 +155,7 @@ export function PropertyPanel() {
                   <Type size={12} /> Content Text
                 </header>
                 <textarea
-                  className="w-full border rounded-xl p-3 text-xs focus:ring-2 focus:ring-teal-500 outline-none min-h-[100px]"
+                  className="w-full border rounded-xl p-3 text-xs focus:ring-2 focus:ring-teal-500 outline-none min-h-100px"
                   value={
                     typeof selectedWidget.props.content?.text === "string"
                       ? selectedWidget.props.content.text
@@ -382,41 +388,77 @@ export function PropertyPanel() {
             </div>
           )}
 
-          {/* FLOW TAB */}
-          {activeTab === "flow" && (
-            <div className="h-full flex flex-col -mx-4 -mt-4">
-              <div className="flex-1">
-                <WorkflowEditor
-                  workflow={selectedWidget.workflow ?? { nodes: [], edges: [] }}
-                  widgetType={selectedWidget.type}
-                  onChange={(wf: { nodes: Node[]; edges: Edge[] }) => {
-                    if (!activeScreenId) return;
-                    updateWidgetProps(activeScreenId, selectedWidget.id, {
-                      workflow: wf,
-                    });
-                  }}
-                />
-              </div>
-              <div className="p-3 bg-teal-50 border-t shrink-0">
-                <button
-                  onClick={() => {
-                    if (!activeScreenId || !selectedWidget.workflow) return;
-                    const compiled = compileWorkflow(
-                      selectedWidget.workflow.nodes,
-                      selectedWidget.workflow.edges
-                    );
-                    updateWidgetProps(activeScreenId, selectedWidget.id, {
-                      props: { actions: compiled },
-                    });
-                    setActiveTab("actions");
-                  }}
-                  className="w-full bg-teal-600 text-white rounded-xl py-2 text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-lg shadow-teal-500/20"
-                >
-                  Compile to Actions
-                </button>
-              </div>
-            </div>
-          )}
+{/* FLOW TAB */}
+{activeTab === "flow" && (
+  <div className="h-full flex flex-col -mx-4 -mt-4">
+    <div className="flex-1">
+      <WorkflowEditor
+        workflow={selectedWidget.workflow ?? { nodes: [], edges: [] }}
+        widgetType={selectedWidget.type}
+        onChange={(wf: { nodes: Node[]; edges: Edge[] }) => {
+          if (!activeScreenId) return;
+          updateWidgetProps(activeScreenId, selectedWidget.id, {
+            workflow: wf,
+          });
+        }}
+      />
+    </div>
+
+    {/* ───── Compile Section ───── */}
+    <div className="p-3 bg-teal-50 border-t shrink-0">
+      {selectedWidget.workflow &&
+      !isWorkflowValid(
+        selectedWidget.workflow.nodes,
+        selectedWidget.workflow.edges
+      ) ? (
+        <p className="text-[10px] text-red-500 text-center mb-2 uppercase font-bold">
+          Connect trigger to an action to compile
+        </p>
+      ) : null}
+
+      <button
+        data-testid="compile-workflow"
+        disabled={
+          !selectedWidget.workflow ||
+          !isWorkflowValid(
+            selectedWidget.workflow.nodes,
+            selectedWidget.workflow.edges
+          )
+        }
+        onClick={() => {
+          if (!activeScreenId || !selectedWidget.workflow) return;
+
+          const compiled = compileWorkflow(
+            selectedWidget.workflow.nodes,
+            selectedWidget.workflow.edges
+          );
+
+          updateWidgetProps(activeScreenId, selectedWidget.id, {
+            props: { actions: compiled },
+          });
+
+          setActiveTab("actions");
+        }}
+        className={`
+          w-full rounded-xl py-2 text-[10px] font-black uppercase tracking-widest
+          transition-all shadow-lg
+          ${
+            selectedWidget.workflow &&
+            isWorkflowValid(
+              selectedWidget.workflow.nodes,
+              selectedWidget.workflow.edges
+            )
+              ? "bg-teal-600 text-white hover:bg-teal-700 shadow-teal-500/20"
+              : "bg-slate-300 text-slate-500 cursor-not-allowed"
+          }
+        `}
+      >
+        Compile to Actions
+      </button>
+    </div>
+  </div>
+)}
+
         </div>
       </aside>
     </>

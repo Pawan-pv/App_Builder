@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'core/runtime/app_id_resolver.dart'; // ✅ NEW
 import 'core/services/config_service.dart';
 import 'models/app_model.dart';
 import 'screens/universal_screen.dart';
@@ -8,6 +9,13 @@ import 'screens/universal_screen.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const AppBootstrapper());
+}
+
+/// =====================================================
+/// GLOBAL RUNTIME CONFIG
+/// =====================================================
+class AppRuntimeConfig {
+  static bool isPreview = true;
 }
 
 /// =====================================================
@@ -31,38 +39,40 @@ class _AppBootstrapperState extends State<AppBootstrapper> {
     _initializeApp();
   }
 
-  Future<void> _initializeApp() async {
-    setState(() {
-      isLoading = true;
-      error = null;
-    });
+  /// -----------------------------------------------------
+  /// Load App Manifest from Backend
+  /// -----------------------------------------------------
+Future<void> _initializeApp() async {
+  setState(() {
+    isLoading = true;
+    error = null;
+  });
 
-    try {
-      final configService = ConfigService();
+  try {
+    // ✅ Platform-safe appId resolution
+    final appId = await AppIdResolver.resolve();
 
-      //  Make appId dynamic later
-      
-      const appId = 'demo-app';
+    final configService = ConfigService();
+    final config = await configService.load(appId);
+    final model = AppModel.fromJson(config);
 
-      final config = await configService.load(appId);
-      final model = AppModel.fromJson(config);
-
-      if (model.screens.isEmpty) {
-        throw Exception('No screens found in app configuration');
-      }
-
-      setState(() {
-        appModel = model;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        error = e.toString();
-        isLoading = false;
-      });
-      debugPrint('❌ Initialization error: $e');
+    if (model.screens.isEmpty) {
+      throw Exception('No screens found in app configuration');
     }
+
+    setState(() {
+      appModel = model;
+      isLoading = false;
+    });
+  } catch (e) {
+    setState(() {
+      error = e.toString();
+      isLoading = false;
+    });
+    debugPrint('❌ Initialization error: $e');
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +89,7 @@ class _AppBootstrapperState extends State<AppBootstrapper> {
               children: [
                 CircularProgressIndicator(),
                 SizedBox(height: 16),
-                Text('Loading app...'),
+                Text('Loading app preview...'),
               ],
             ),
           ),
@@ -100,18 +110,11 @@ class _AppBootstrapperState extends State<AppBootstrapper> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red,
-                  ),
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
                   const Text(
                     'Failed to load app',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -132,9 +135,6 @@ class _AppBootstrapperState extends State<AppBootstrapper> {
       );
     }
 
-    // ─────────────────────────────────────────
-    // Safety fallback (should never happen)
-    // ─────────────────────────────────────────
     if (appModel == null) {
       return const MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -144,15 +144,12 @@ class _AppBootstrapperState extends State<AppBootstrapper> {
       );
     }
 
-    // ─────────────────────────────────────────
-    // Normal App Start
-    // ─────────────────────────────────────────
     return UniversalApp(appModel: appModel!);
   }
 }
 
 /// =====================================================
-/// UNIVERSAL APP
+/// UNIVERSAL APP (PREVIEW SHELL)
 /// =====================================================
 class UniversalApp extends StatelessWidget {
   final AppModel appModel;
@@ -164,11 +161,10 @@ class UniversalApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Null-safe initial screen selection
     final initialScreen = appModel.screens.firstWhere(
-  (screen) => screen.isInitial,
-  orElse: () => appModel.screens.first,
-);
+      (s) => s.isInitial,
+      orElse: () => appModel.screens.first,
+    );
 
     return Provider<AppModel>.value(
       value: appModel,
@@ -176,7 +172,48 @@ class UniversalApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: appModel.name,
         theme: appModel.theme.toFlutterTheme(),
-        home: UniversalScreen(screenId: initialScreen.id),
+        home: Scaffold(
+          backgroundColor: const Color(0xFFEEF2F7),
+          body: Center(
+            child: _PreviewDeviceShell(
+              child: SafeArea(
+                child: UniversalScreen(screenId: initialScreen.id),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// =====================================================
+/// DEVICE PREVIEW SHELL (CRITICAL)
+/// =====================================================
+class _PreviewDeviceShell extends StatelessWidget {
+  final Widget child;
+
+  const _PreviewDeviceShell({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 375,
+      height: 812,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 30,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: child,
       ),
     );
   }

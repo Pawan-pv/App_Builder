@@ -92,7 +92,7 @@ export function compileWorkflow(
   for (const triggerNode of triggerNodes) {
     const trigger = resolveTrigger(triggerNode);
 
-    function collect(startNodeId: string): WidgetAction[] {
+    function collect(startNodeIdId: string): WidgetAction[] {
       const visited = new Set<string>();
       const actions: WidgetAction[] = [];
 
@@ -100,43 +100,49 @@ export function compileWorkflow(
         if (visited.has(nodeId)) return;
         visited.add(nodeId);
 
-        for (const edge of outgoingEdges(nodeId, edges)) {
-          const node = nodeById(nodes, edge.target);
-          if (!node) continue;
-
-          /* ---------- CONDITION NODE ---------- */
-          if (node.type === "condition") {
-            const trueEdge = edges.find(
-              e => e.source === node.id && e.sourceHandle === "true"
-            );
-            const falseEdge = edges.find(
-              e => e.source === node.id && e.sourceHandle === "false"
-            );
-
-            const ifAction: WidgetAction = {
-              id: node.id,
-              trigger,
-              type: "if",
-              condition: node.data.config?.condition as ActionCondition,
-              then: trueEdge ? collect(trueEdge.target) : [],
-              else: falseEdge ? collect(falseEdge.target) : [],
-              config: {},
-            };
-
-            actions.push(ifAction);
-            continue;
+        const node = nodeById(nodes, nodeId);
+        if (!node || node.type === "trigger") {
+          // Process children
+          for (const edge of outgoingEdges(nodeId, edges)) {
+            walk(edge.target);
           }
+          return;
+        }
 
-          /* ---------- NORMAL ACTION ---------- */
-          const action = mapNodeToAction(node, trigger);
-          if (action) {
-            actions.push(action);
-            walk(node.id);
-          }
+        /* ---------- CONDITION NODE ---------- */
+        if (node.type === "condition") {
+          const trueEdge = edges.find(
+            e => e.source === node.id && e.sourceHandle === "true"
+          );
+          const falseEdge = edges.find(
+            e => e.source === node.id && e.sourceHandle === "false"
+          );
+
+          const ifAction: WidgetAction = {
+            id: node.id,
+            trigger,
+            type: "if",
+            condition: node.data.config?.condition as ActionCondition,
+            then: trueEdge ? collect(trueEdge.target) : [],
+            else: falseEdge ? collect(falseEdge.target) : [],
+            config: {},
+          };
+
+          actions.push(ifAction);
+          return;
+        }
+
+        /* ---------- NORMAL ACTION ---------- */
+        const action = mapNodeToAction(node, trigger);
+        if (action) {
+          actions.push(action);
+          // Only one outgoing edge allowed for normal actions currently
+          const nextEdge = outgoingEdges(node.id, edges)[0];
+          if (nextEdge) walk(nextEdge.target);
         }
       }
 
-      walk(startNodeId);
+      walk(startNodeIdId);
       return actions;
     }
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import type { Widget } from "../types";
+import type { Widget, WidgetType } from "../types";
 import { useUniversalBuilder } from "../context/UniversalBuilderContext";
 import { executeActions } from "../runTimeEngine/actionExecutor";
 import { evaluateActionCondition } from "../runTimeEngine/conditionEvaluator";
@@ -31,6 +31,7 @@ export function WidgetRenderer({
     updateWidgetProps,
     zoom,
     setActiveScreen,
+    addWidget,
   } = useUniversalBuilder();
 
   const widgetRef = useRef<HTMLDivElement>(null);
@@ -38,12 +39,14 @@ export function WidgetRenderer({
   const dragMovedRef = useRef(false);
 
   const [isDragging, setIsDragging] = useState(false);
+  const [isDropTarget, setIsDropTarget] = useState(false);
 
   const { id, type, props, meta } = widget;
 
   const isSelected = selectedWidgetId === id;
   const isRoot = !parentId;
   const isFlex = type === "Column" || type === "Row";
+  const isContainer = type === "Container" || type === "Column" || type === "Row" || type === "Card";
 
   /* ─────────────────────────────────────────────
      CONDITIONAL VISIBILITY
@@ -54,6 +57,50 @@ export function WidgetRenderer({
     : true;
 
   if (meta?.isHidden || !isVisible) return null;
+
+  /* ─────────────────────────────────────────────
+     CONTAINER DROP HANDLING
+  ───────────────────────────────────────────── */
+
+  const handleContainerDragOver = (e: React.DragEvent) => {
+    if (!isContainer) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDropTarget(true);
+  };
+
+  const handleContainerDragLeave = (e: React.DragEvent) => {
+    if (!isContainer) return;
+
+    // Only hide drop indicator if we're actually leaving the container
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (
+      e.clientX < rect.left ||
+      e.clientX >= rect.right ||
+      e.clientY < rect.top ||
+      e.clientY >= rect.bottom
+    ) {
+      setIsDropTarget(false);
+    }
+  };
+
+  const handleContainerDrop = (e: React.DragEvent) => {
+    if (!isContainer) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDropTarget(false);
+
+    const newType = e.dataTransfer.getData("widgetType");
+    const draggedId = e.dataTransfer.getData("draggedWidgetId");
+
+    if (newType) {
+      // Add new widget as child of this container
+      addWidget(screenId, newType as WidgetType, id);
+    }
+    // TODO: Handle reordering draggedId into this container
+  };
 
   /* ─────────────────────────────────────────────
      ACTIONS
@@ -206,9 +253,9 @@ export function WidgetRenderer({
   ───────────────────────────────────────────── */
 
   const containerStyle: React.CSSProperties = {
-    position: isRoot ? "absolute" : "relative",
-    left: isRoot ? props.layout?.x ?? 0 : undefined,
-    top: isRoot ? props.layout?.y ?? 0 : undefined,
+    position: (props.layout?.position === "absolute" || isDragging) ? "absolute" : "relative",
+    left: (props.layout?.position === "absolute" || isDragging) ? props.layout?.x ?? 0 : undefined,
+    top: (props.layout?.position === "absolute" || isDragging) ? props.layout?.y ?? 0 : undefined,
 
     width:
       props.layout?.widthMode === "fixed" ? props.layout.width : undefined,
@@ -242,10 +289,12 @@ export function WidgetRenderer({
   return (
     <div
       ref={widgetRef}
+      data-testid={`widget-${type}`}
       className={clsx(
         "group relative border rounded-xl transition-all",
         isSelected && "ring-2 ring-teal-500",
-        isDragging && "cursor-grabbing"
+        isDragging && "cursor-grabbing",
+        isDropTarget && isContainer && "ring-4 ring-blue-400 bg-blue-50/20"
       )}
       style={containerStyle}
       onMouseDown={startDrag}
@@ -259,6 +308,9 @@ export function WidgetRenderer({
         e.stopPropagation();
         setSelectedWidget(id);
       }}
+      onDragOver={handleContainerDragOver}
+      onDragLeave={handleContainerDragLeave}
+      onDrop={handleContainerDrop}
     >
       {renderContent(widget, screenId)}
 
@@ -292,18 +344,24 @@ function renderContent(widget: Widget, screenId: string) {
 
   /* ---------- CONTAINERS ---------- */
 
-  if (type === "Container" || type === "Column" || type === "Row") {
-    return children?.length ? (
-      children.map((c) => (
-        <WidgetRenderer
-          key={c.id}
-          widget={c}
-          screenId={screenId}
-          parentId={widget.id}
-        />
-      ))
-    ) : (
-      <span className="text-xs text-slate-400">Drop children</span>
+  if (type === "Container" || type === "Column" || type === "Row" || type === "Card") {
+    return (
+      <div className="w-full h-full min-h-[80px] p-2">
+        {children?.length ? (
+          children.map((c) => (
+            <WidgetRenderer
+              key={c.id}
+              widget={c}
+              screenId={screenId}
+              parentId={widget.id}
+            />
+          ))
+        ) : (
+          <div className="w-full h-full min-h-[60px] flex items-center justify-center border-2 border-dashed border-slate-200 rounded-lg">
+            <span className="text-xs text-slate-400">Drop widgets here</span>
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -359,7 +417,31 @@ function renderContent(widget: Widget, screenId: string) {
       textAlign: props.style?.textAlign,
     };
 
-    return <p style={textStyle}>{String(text ?? "")}</p>;
+    return <p data-testid="widget-content-Text" style={textStyle}>{String(text ?? "")}</p>;
+  }
+
+  /* ---------- BUTTON ---------- */
+
+  if (type === "Button") {
+    const text = resolveBinding(props.content?.text) ?? widget.label;
+
+    const buttonStyle: React.CSSProperties = {
+      color: resolveColor(props.style?.color) ?? "#ffffff",
+      backgroundColor: resolveColor(props.style?.backgroundColor) ?? "#0f766e",
+      fontSize: props.style?.fontSize,
+      fontWeight: props.style?.fontWeight,
+      fontStyle: props.style?.fontStyle,
+      textAlign: "center",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "100%",
+      height: "100%",
+      border: "none",
+      cursor: "pointer",
+    };
+
+    return <button style={buttonStyle}>{String(text)}</button>;
   }
 
   return <div>{type}</div>;

@@ -1,12 +1,16 @@
+// Update src/workflow/nodes/nodeTypes.ts
 import { TriggerNode } from "./TriggerNode";
-import { ActionNode } from "./ActionNode";
+import { ApiNode } from "./ApiNode";
+import { ValidateNode } from "./ValidateNode";
+import { NavigateNode } from "./NavigateNode";
+import { AlertNode } from "./AlertNode";
 import { ConditionNode } from "./ConditionNode";
 
 export const nodeTypes = {
   trigger: TriggerNode,
-  api: ActionNode,
-  validate: ActionNode,
-  navigate: ActionNode,
-  alert: ActionNode,
+  api: ApiNode,
+  validate: ValidateNode,
+  navigate: NavigateNode,
+  alert: AlertNode,
   condition: ConditionNode,
 };

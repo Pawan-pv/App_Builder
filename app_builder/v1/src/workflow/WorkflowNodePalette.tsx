@@ -1,3 +1,4 @@
+// src/workflow/WorkflowNodePalette.tsx
 import React from "react";
 import {
     Globe,
@@ -15,10 +16,20 @@ export const NODE_TYPES = [
     { type: "condition", label: "Condition (If)", icon: Split, color: "text-amber-500" },
 ];
 
-export function WorkflowNodePalette() {
+interface WorkflowNodePaletteProps {
+    onNodeClick?: (nodeType: string) => void;
+}
+
+export function WorkflowNodePalette({ onNodeClick }: WorkflowNodePaletteProps = {}) {
     const onDragStart = (event: React.DragEvent, nodeType: string) => {
         event.dataTransfer.setData("application/reactflow", nodeType);
         event.dataTransfer.effectAllowed = "move";
+    };
+
+    const handleClick = (nodeType: string) => {
+        if (onNodeClick) {
+            onNodeClick(nodeType);
+        }
     };
 
     return (
@@ -30,9 +41,12 @@ export function WorkflowNodePalette() {
                 {NODE_TYPES.map((node) => (
                     <div
                         key={node.type}
+                        data-node-type={node.type}
+                        data-testid={`palette-node-${node.type}`}
                         className="flex items-center gap-2 p-2 border rounded cursor-grab hover:bg-slate-50 active:cursor-grabbing text-xs"
                         draggable
                         onDragStart={(e) => onDragStart(e, node.type)}
+                        onClick={() => handleClick(node.type)}
                     >
                         <node.icon size={14} className={node.color} />
                         {node.label}

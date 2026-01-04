@@ -1,22 +1,18 @@
 import { useUniversalBuilder } from "../context/UniversalBuilderContext";
-import { useEffect, useRef } from "react";
+import { useMemo } from "react";
 
 export function Preview() {
-  const { screens } = useUniversalBuilder();
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const { appId } = useUniversalBuilder(); // or hardcode temporarily
 
-  useEffect(() => {
-    // Sync screens to the Flutter Preview Iframe
-    iframeRef.current?.contentWindow?.postMessage(
-      { type: "SYNC_SCREENS", screens },
-      "*"
-    );
-  }, [screens]);
+  const previewUrl = useMemo(() => {
+    return `http://localhost:5000/?appId=${
+      appId ?? "11111111-1111-1111-1111-111111111111"
+    }`;
+  }, [appId]);
 
   return (
     <iframe
-      ref={iframeRef}
-      src="https://preview.yourdomain.com"
+      src={previewUrl}
       className="w-full h-full border-l bg-slate-100"
     />
   );

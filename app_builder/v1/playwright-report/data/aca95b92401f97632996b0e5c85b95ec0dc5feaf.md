@@ -1,0 +1,171 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - text: FlowStudio
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic [ref=e12]: App Screens
+          - button [ref=e13]:
+            - img [ref=e14]
+        - button "Login" [ref=e15]:
+          - img [ref=e16]
+          - text: Login
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - heading "Components" [level=2] [ref=e22]
+          - generic [ref=e23]:
+            - img [ref=e24]
+            - generic [ref=e26]:
+              - strong [ref=e27]: 💡 Drag components
+              - text: from the palette onto the canvas to add them to your screen.
+        - generic [ref=e29]:
+          - button "Basic ▼" [ref=e30]:
+            - heading "Basic" [level=3] [ref=e31]
+            - generic [ref=e32]: ▼
+          - generic [ref=e33]:
+            - generic "Drag Text to canvas" [ref=e34]:
+              - img [ref=e36]
+              - generic [ref=e38]: Text
+              - generic [ref=e39]: Heading, paragraph
+            - generic "Drag Button to canvas" [ref=e40]:
+              - img [ref=e42]
+              - generic [ref=e44]: Button
+              - generic [ref=e45]: Clickable button
+            - generic "Drag Input to canvas" [ref=e46]:
+              - img [ref=e48]
+              - generic [ref=e52]: Input
+              - generic [ref=e53]: Text input field
+            - generic "Drag Image to canvas" [ref=e54]:
+              - img [ref=e56]
+              - generic [ref=e60]: Image
+              - generic [ref=e61]: Image element
+        - button "Layout ▼" [ref=e63]:
+          - heading "Layout" [level=3] [ref=e64]
+          - generic [ref=e65]: ▼
+        - button "Data ▼" [ref=e67]:
+          - heading "Data" [level=3] [ref=e68]
+          - generic [ref=e69]: ▼
+        - generic [ref=e71]:
+          - heading "Quick Templates" [level=3] [ref=e72]
+          - generic [ref=e73]:
+            - button "Todo List Click to add" [ref=e74]:
+              - img [ref=e76]
+              - generic [ref=e79]:
+                - generic [ref=e80]: Todo List
+                - generic [ref=e81]: Click to add
+            - button "Courses Click to add" [ref=e82]:
+              - img [ref=e84]
+              - generic [ref=e87]:
+                - generic [ref=e88]: Courses
+                - generic [ref=e89]: Click to add
+            - button "Products Click to add" [ref=e90]:
+              - img [ref=e92]
+              - generic [ref=e96]:
+                - generic [ref=e97]: Products
+                - generic [ref=e98]: Click to add
+  - generic [ref=e99]:
+    - generic [ref=e100]:
+      - generic [ref=e102] [cursor=pointer]: Login
+      - button "Add New Screen" [ref=e103]:
+        - img [ref=e104]
+    - generic [ref=e105]:
+      - generic [ref=e106]:
+        - img
+        - generic [ref=e107]:
+          - generic [ref=e108]:
+            - generic [ref=e111]: Login
+            - img [ref=e112]
+          - generic [ref=e123]:
+            - paragraph [ref=e127]: Welcome Back
+            - textbox "Email Input" [ref=e136]
+            - textbox "Password Input" [active] [ref=e139]
+            - button "Sign In" [ref=e143] [cursor=pointer]
+      - generic [ref=e144]:
+        - button [ref=e145]:
+          - img [ref=e146]
+        - generic [ref=e147]: 100%
+        - button [ref=e148]:
+          - img [ref=e149]
+        - button "Reset Zoom" [ref=e151]:
+          - img [ref=e152]
+  - complementary [ref=e157]:
+    - generic [ref=e158]:
+      - generic [ref=e159]:
+        - heading "Inspector" [level=3] [ref=e160]
+        - paragraph [ref=e161]: Text
+      - button [ref=e162]:
+        - img [ref=e163]
+    - generic [ref=e166]:
+      - button "content tab" [ref=e167]:
+        - img [ref=e168]
+      - button "style tab" [ref=e170]:
+        - img [ref=e171]
+      - button "actions tab" [ref=e177]:
+        - img [ref=e178]
+      - button "flow tab" [ref=e180]:
+        - img [ref=e181]
+    - generic [ref=e186]:
+      - generic [ref=e188]:
+        - generic [ref=e189]:
+          - generic [ref=e190]:
+            - generic [ref=e191]: Template
+            - combobox [ref=e192]:
+              - option "Custom" [selected]
+              - option "Empty"
+          - button "Save Template" [ref=e193]:
+            - img [ref=e194]
+            - text: Save Template
+        - generic [ref=e198]:
+          - generic [ref=e199]:
+            - generic [ref=e200]: Nodes
+            - generic [ref=e201]:
+              - generic [ref=e202]:
+                - img [ref=e203]
+                - text: API Request
+              - generic [ref=e206]:
+                - img [ref=e207]
+                - text: Navigate
+              - generic [ref=e209]:
+                - img [ref=e210]
+                - text: Show Alert
+              - generic [ref=e212]:
+                - img [ref=e213]
+                - text: Validate Form
+              - generic [ref=e216]:
+                - img [ref=e217]
+                - text: Condition (If)
+              - generic [ref=e222]: Drag nodes onto the canvas
+          - generic [ref=e224]:
+            - generic [ref=e226]:
+              - generic:
+                - img
+                - button "⚡ On Tap" [ref=e227]:
+                  - generic [ref=e228]: ⚡ On Tap
+            - img [ref=e230]
+            - generic [ref=e232]:
+              - button "zoom in" [ref=e233] [cursor=pointer]:
+                - img [ref=e234]
+              - button "zoom out" [ref=e236] [cursor=pointer]:
+                - img [ref=e237]
+              - button "fit view" [ref=e239] [cursor=pointer]:
+                - img [ref=e240]
+              - button "toggle interactivity" [ref=e242] [cursor=pointer]:
+                - img [ref=e243]
+            - link "React Flow attribution" [ref=e246] [cursor=pointer]:
+              - /url: https://reactflow.dev
+              - text: React Flow
+      - generic [ref=e248]:
+        - paragraph [ref=e249]: Connect trigger to an action to compile
+        - button "Compile to Actions" [disabled] [ref=e250]
+  - button "Debug" [ref=e251]:
+    - img [ref=e252]
+    - text: Debug
+  - button "Preview" [ref=e261]:
+    - img [ref=e262]
+    - text: Preview
+```

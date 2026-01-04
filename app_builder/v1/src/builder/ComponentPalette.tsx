@@ -261,6 +261,7 @@ function ComponentCard({ component, isDragging, onDragStart, onDragEnd }: Compon
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
+      data-testid={`palette-item-${component.type}`}
       className={`flex flex-col items-center p-3 border rounded-lg cursor-grab active:cursor-grabbing transition-all hover:border-teal-400 hover:bg-teal-50 group ${isDragging ? 'opacity-50 border-teal-400 bg-teal-50' : 'border-slate-200 bg-white'
         }`}
       title={`Drag ${component.type} to canvas`}

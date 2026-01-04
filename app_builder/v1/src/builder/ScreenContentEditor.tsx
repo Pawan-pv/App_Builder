@@ -35,6 +35,7 @@ export function ScreenContentEditor({ screenId }: { screenId: string }) {
 
   const handleRootDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // ← CRITICAL: Prevent double-firing
     setIsOverRoot(false);
 
     const type = e.dataTransfer.getData("widgetType") as WidgetType | "";
@@ -47,7 +48,6 @@ export function ScreenContentEditor({ screenId }: { screenId: string }) {
       addWidget(screenId, type, null);
     }
   };
-
   return (
     <div
       className={clsx(
@@ -57,6 +57,7 @@ export function ScreenContentEditor({ screenId }: { screenId: string }) {
           : "border-transparent"
       )}
       style={{ width, height, borderRadius: 40 }}
+      data-testid="phone-canvas"
       onClick={() => setSelectedWidget(null)}
       onDragOver={(e) => {
         e.preventDefault();
@@ -78,7 +79,24 @@ export function ScreenContentEditor({ screenId }: { screenId: string }) {
       {/* Phone notch */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-900 rounded-b-2xl z-50" />
 
-      <div className="w-full h-full flex flex-col pt-12 pb-10 px-4 overflow-y-auto scrollbar-hide">
+      {/* 
+        INNER SCROLL CONTAINER
+        ----------------------
+        IMPORTANT:
+        This div is the actual drop target under the cursor.
+        We must allow dragover + drop here, otherwise React
+        will ignore the drop (HTML5 DnD rule).
+      */}
+      <div
+        data-testid="phone-canvas-inner"
+        className="w-full h-full flex flex-col pt-12 pb-10 px-4 overflow-y-auto scrollbar-hide"
+        onDragOver={(e) => {
+          // REQUIRED: allow HTML5 drop on this element
+          e.preventDefault();
+          setIsOverRoot(true);
+        }}
+        onDrop={handleRootDrop} // forward to same root handler
+      >
         {screen.widgets.map((widget, index) => (
           <WidgetWrapper
             key={widget.id}
@@ -155,7 +173,7 @@ function WidgetWrapper({
     e.dataTransfer.effectAllowed = "move";
     setIsDragging(true);
 
-    // custom drag preview
+    // Custom drag preview
     if (e.currentTarget instanceof HTMLElement) {
       const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
       dragImage.style.opacity = "0.8";

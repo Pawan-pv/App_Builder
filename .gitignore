@@ -45,8 +45,8 @@ coverage/
 # TypeScript
 *.tsbuildinfo
 
-# Vite
-.vite/
+# # Vite
+# .vite/
 
 # Gemini AI
 .gemini/

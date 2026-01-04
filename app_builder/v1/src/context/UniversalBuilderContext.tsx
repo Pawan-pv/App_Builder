@@ -160,6 +160,9 @@ function insertIntoTree(
   );
 }
 
+export { removeFromTree, insertIntoTree };
+
+
 /* ═══════════════════════════════════════
    PROVIDER
 ═══════════════════════════════════════ */
